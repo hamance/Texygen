@@ -10,6 +10,7 @@ from models.mle.Mle import Mle
 from models.rankgan.Rankgan import Rankgan
 from models.seqgan.Seqgan import Seqgan
 from models.textGan_MMD.Textgan import TextganMmd
+from models.seqgan_cap.Seqgan import Seqgan_cap
 
 
 def set_gan(gan_name):
@@ -21,6 +22,7 @@ def set_gan(gan_name):
     gans['rankgan'] = Rankgan
     gans['maligan'] = Maligan
     gans['mle'] = Mle
+    gans['seqgan_cap'] = Seqgan_cap
     try:
         Gan = gans[gan_name.lower()]
         gan = Gan()
