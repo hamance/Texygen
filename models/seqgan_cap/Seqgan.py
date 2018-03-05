@@ -118,27 +118,27 @@ class Seqgan_cap(Gan):
         self.pre_epoch_num = 80
         self.adversarial_epoch_num = 100
         self.log = open('experiment-log-seqgan.csv', 'w')
-        # generate_samples(self.sess, self.oracle, self.batch_size, self.generate_num, self.oracle_file)
-        # generate_samples(self.sess, self.generator, self.batch_size, self.generate_num, self.generator_file)
+        generate_samples(self.sess, self.oracle, self.batch_size, self.generate_num, self.oracle_file)
+        generate_samples(self.sess, self.generator, self.batch_size, self.generate_num, self.generator_file)
         self.gen_data_loader.create_batches(self.oracle_file)
         self.oracle_data_loader.create_batches(self.generator_file)
 
-        # print('start pre-train generator:')
-        # for epoch in range(self.pre_epoch_num):
-        #     start = time()
-        #     loss = pre_train_epoch(self.sess, self.generator, self.gen_data_loader)
-        #     end = time()
-        #     print('epoch:' + str(self.epoch) + '\t time:' + str(end - start))
-        #     self.add_epoch()
-        #     if epoch % 5 == 0:
-        #         generate_samples(self.sess, self.generator, self.batch_size, self.generate_num, self.generator_file)
-        #         self.evaluate()
+        print('start pre-train generator:')
+        for epoch in range(self.pre_epoch_num):
+            start = time()
+            loss = pre_train_epoch(self.sess, self.generator, self.gen_data_loader)
+            end = time()
+            print('epoch:' + str(self.epoch) + '\t time:' + str(end - start))
+            self.add_epoch()
+            if epoch % 5 == 0:
+                generate_samples(self.sess, self.generator, self.batch_size, self.generate_num, self.generator_file)
+                self.evaluate()
 
-        # print('start pre-train discriminator:')
-        # self.reset_epoch()
-        # for epoch in range(self.pre_epoch_num):
-        #     print('epoch:' + str(epoch))
-        #     self.train_discriminator()
+        print('start pre-train discriminator:')
+        self.reset_epoch()
+        for epoch in range(self.pre_epoch_num):
+            print('epoch:' + str(epoch))
+            self.train_discriminator()
 
         self.reset_epoch()
         print('adversarial training:')
