@@ -12,7 +12,11 @@ class FeatLoader():
         self.feat = np.memmap(feat_mmp, dtype='float32', mode='r', shape=self.feat_shape)
 
     def get_feat(self, img):
-        return self.feat[self.img2id[img]]
+        if isinstance(img, str):
+            return self.feat[self.img2id[img]]
+        else:
+            return self.feat[np.array([self.img2id[ii] for ii in img])]
+            
 
     def sample(self, num):
         imgs = np.random.choice(self.imgs, num, replace=False)
@@ -64,31 +68,37 @@ class DataLoader():
 
 
 class DisDataloader():
-    def __init__(self, batch_size, seq_length):
+    def __init__(self, batch_size, seq_length, featloader):
         self.batch_size = batch_size
         self.sentences = np.array([])
         self.labels = np.array([])
+        self.feats = np.array([])
         self.seq_length = seq_length
+        self.featloader = featloader
 
     def load_train_data(self, positive_file, negative_file):
         # Load data
         positive_examples = []
         negative_examples = []
+        imgs = []
         with open(positive_file)as fin:
             for line in fin:
                 line = line.strip()
                 line = line.split()
-                parse_line = [int(x) for x in line]
+                imgs.append(line[0])
+                parse_line = [int(x) for x in line[1:]]
                 if len(parse_line) == self.seq_length:
                     positive_examples.append(parse_line)
         with open(negative_file)as fin:
             for line in fin:
                 line = line.strip()
                 line = line.split()
-                parse_line = [int(x) for x in line]
+                imgs.append(line[0])
+                parse_line = [int(x) for x in line[1:]]
                 if len(parse_line) == self.seq_length:
                     negative_examples.append(parse_line)
         self.sentences = np.array(positive_examples + negative_examples)
+        self.imgs = np.array(imgs)
 
         # Generate labels
         positive_labels = [[0, 1] for _ in positive_examples]
@@ -99,6 +109,7 @@ class DisDataloader():
         shuffle_indices = np.random.permutation(np.arange(len(self.labels)))
         self.sentences = self.sentences[shuffle_indices]
         self.labels = self.labels[shuffle_indices]
+        self.imgs = self.imgs[shuffle_indices]
 
         # Split batches
         self.num_batch = int(len(self.labels) / self.batch_size)
@@ -106,11 +117,14 @@ class DisDataloader():
         self.labels = self.labels[:self.num_batch * self.batch_size]
         self.sentences_batches = np.split(self.sentences, self.num_batch, 0)
         self.labels_batches = np.split(self.labels, self.num_batch, 0)
+        self.imgs_batches = np.split(self.imgs, self.num_batch, 0)
 
         self.pointer = 0
 
     def next_batch(self):
-        ret = self.sentences_batches[self.pointer], self.labels_batches[self.pointer]
+        imgs = self.imgs_batches[self.pointer]
+        feats = self.featloader.get_feat(imgs)
+        ret = feats, self.sentences_batches[self.pointer], self.labels_batches[self.pointer]
         self.pointer = (self.pointer + 1) % self.num_batch
         return ret
 

@@ -29,6 +29,6 @@ class Nll(Metrics):
             try:
                 g_loss = self.rnn.get_nll(self.sess, batch)
             except Exception as e:
-                g_loss = self.sess.run(self.rnn.pretrain_loss, {self.rnn.x: batch})
+                g_loss = self.sess.run(self.rnn.pretrain_loss, {self.rnn.f: batch[0], self.rnn.x: batch[1]})
             nll.append(g_loss)
         return np.mean(nll)

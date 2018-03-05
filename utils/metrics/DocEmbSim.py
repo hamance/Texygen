@@ -42,7 +42,7 @@ class DocEmbSim(Metrics):
             for line in file:
                 text = nltk.word_tokenize(line)
                 text = list(map(int, text))
-                words += text
+                words += text[1:]
         counts = collections.Counter(words)
         new_list = sorted(words, key=lambda x: -counts[x])
         word_set = list(set(new_list))
@@ -58,7 +58,7 @@ class DocEmbSim(Metrics):
         with open(file, 'r') as file:
             for line in file:
                 text = nltk.word_tokenize(line)
-                words.append(text)
+                words.append(text[1:])
         return words
 
     def generate_batch(self, batch_size, num_skips, skip_window, data=None):

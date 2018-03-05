@@ -59,6 +59,7 @@ class Discriminator(object):
             self, sequence_length, num_classes, vocab_size,
             emd_dim, filter_sizes, num_filters, l2_reg_lambda=0.0, dropout_keep_prob = 1):
         # Placeholders for input, output and dropout
+        self.input_f = tf.placeholder(tf.float32, [None, 512], name='input_f')
         self.input_x = tf.placeholder(tf.int32, [None, sequence_length], name="input_x")
         self.input_y = tf.placeholder(tf.float32, [None, num_classes], name="input_y")
         self.dropout_keep_prob = dropout_keep_prob
@@ -75,6 +76,8 @@ class Discriminator(object):
                     name="W")
                 self.embedded_chars = tf.nn.embedding_lookup(self.W, self.input_x)
                 self.embedded_chars_expanded = tf.expand_dims(self.embedded_chars, -1)
+
+            self.embedded_feats = tf.layers.dense(self.input_f, emd_dim)
 
             # Create a convolution + maxpool layer for each filter size
             pooled_outputs = []
@@ -113,14 +116,15 @@ class Discriminator(object):
             # Add dropout
             with tf.name_scope("dropout"):
                 self.h_drop = tf.nn.dropout(self.h_highway, self.dropout_keep_prob)
+            self.total_feat = tf.concat([self.embedded_feats, self.h_drop], axis=1)
 
             # Final (unnormalized) scores and predictions
             with tf.name_scope("output"):
-                W = tf.Variable(tf.truncated_normal([num_filters_total, num_classes], stddev=0.1), name="W")
+                W = tf.Variable(tf.truncated_normal([num_filters_total + emd_dim, num_classes], stddev=0.1), name="W")
                 b = tf.Variable(tf.constant(0.1, shape=[num_classes]), name="b")
                 l2_loss += tf.nn.l2_loss(W)
                 l2_loss += tf.nn.l2_loss(b)
-                self.scores = tf.nn.xw_plus_b(self.h_drop, W, b, name="scores")
+                self.scores = tf.nn.xw_plus_b(self.total_feat, W, b, name="scores")
                 self.ypred_for_auc = tf.nn.softmax(self.scores)
                 self.predictions = tf.argmax(self.scores, 1, name="predictions")
 
