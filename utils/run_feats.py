@@ -134,9 +134,6 @@ def main(argv):
 
     num_files = len(path_to_line_no)
 
-    with open('../save/imgid2lineno.json', 'w') as f:
-        json.dump(image_id_to_line_no, f)
-
     fc_path = FLAGS.output_path + '_fc.mmp'
     att_path = FLAGS.output_path + '_att.mmp'
 
@@ -147,14 +144,14 @@ def main(argv):
     mmp_att = np.memmap(att_path, dtype='float32', mode='w+', shape=att_shape)
     img_size = vgg.vgg_16.default_image_size
 
+    with open('../save/imgid2lineno.json', 'w') as f:
+        json.dump({'img2id': image_id_to_line_no, 'fc_shape': fc_shape, 'att_shape': att_shape}, f)
 
     with tf.Graph().as_default():
         inp = tf.placeholder(dtype=tf.string, shape=[])
 
         image = tf.image.decode_jpeg(inp, channels=3)
         processed_image = preprocess_image(image, img_size, img_size)
-
-        import ipdb; ipdb.set_trace()
 
         # slim
         with slim.arg_scope(vgg.vgg_arg_scope()):
