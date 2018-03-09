@@ -88,3 +88,59 @@ def text_precess(train_text_loc, test_text_loc=None):
         outfile.write(text_to_code(test_tokens, word_index_dict, sequence_len))
 
     return sequence_len, len(word_index_dict) + 1
+
+
+def coco_text_to_code(img_ids, tokens, dictionary, seq_len):
+    code_str = ""
+    eof_code = len(dictionary)
+    for iid, sentence in zip(img_ids, tokens):
+        index = 0
+        code_str += (str(iid) + ' ')
+        for word in sentence:
+            code_str += (str(dictionary[word]) + ' ')
+            index += 1
+        while index < seq_len:
+            code_str += (str(eof_code) + ' ')
+            index += 1
+        code_str += '\n'
+    return code_str
+
+
+def coco_code_to_text(codes, dictionary):
+    paras = ""
+    eof_code = len(dictionary)
+    for line in codes:
+        paras += str(line[0])
+        numbers = map(int, line[1:])
+        for number in numbers:
+            if number == eof_code:
+                continue
+            paras += (dictionary[str(number)] + ' ')
+        paras += '\n'
+    return paras
+
+
+def split_text(inp_tokens):
+    iids, tokens = [], []
+    for sent in inp_tokens:
+        iids.append(sent[0])
+        tokens.append(sent[1:])
+    return iids, tokens
+
+def coco_process(train_text_loc, test_text_loc=None):
+    train_tokens = get_tokenlized(train_text_loc)
+    if test_text_loc is None:
+        test_tokens = list()
+    else:
+        test_tokens = get_tokenlized(test_text_loc)
+
+    img_ids, tokens = split_text(train_tokens + test_tokens)
+    word_set = get_word_list(tokens)
+    [word_index_dict, index_word_dict] = get_dict(word_set)
+
+    sequence_len = len(max(tokens, key=len))
+
+    with open('save/eval_data.txt', 'w') as outfile:
+        outfile.write(coco_text_to_code(img_ids, test_tokens, word_index_dict, sequence_len))
+
+    return sequence_len, len(word_index_dict) + 1

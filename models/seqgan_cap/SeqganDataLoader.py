@@ -7,8 +7,8 @@ class FeatLoader():
         with open(img2id_json, 'r') as fin:
             data = json.load(fin)
         self.img2id = data['img2id']
-        self.imgs = data['imgs']
-        self.feat_shape = tuple(data['feat_shape'])
+        self.imgs = list(self.img2id.keys())
+        self.feat_shape = tuple(data['fc_shape'])
         self.feat = np.memmap(feat_mmp, dtype='float32', mode='r', shape=self.feat_shape)
 
     def get_feat(self, img):
@@ -16,7 +16,6 @@ class FeatLoader():
             return self.feat[self.img2id[img]]
         else:
             return self.feat[np.array([self.img2id[ii] for ii in img])]
-            
 
     def sample(self, num):
         imgs = np.random.choice(self.imgs, num, replace=False)

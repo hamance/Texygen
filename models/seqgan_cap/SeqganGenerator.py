@@ -18,7 +18,7 @@ class Generator(object):
         self.g_params = []
         self.d_params = []
         self.featloader = featloader
-        self.feat_size = 512
+        self.feat_size = 4096   #512
         self.temperature = 1.0
         self.grad_clip = 5.0
 

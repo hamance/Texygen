@@ -32,15 +32,18 @@ class Seqgan_cap(Gan):
         self.generate_num = 128
         self.start_token = 0
 
+        # self.saver = tf.train.Saver(max_to_keep=10)
+
         self.oracle_file = 'save/oracle.txt'
         self.generator_file = 'save/generator.txt'
         self.test_file = 'save/test_file.txt'
+        self.dict_file = 'save/dict.json'
         if platform.system() == 'Windows':
-            self.feat_mmp = 'g:\\image_caption\\coco\\processed\\coco0126_fc.mmp'
-            self.feat_json = 'g:\\image_caption\\coco\\processed\\coco0126_img2id.json'
+            self.feat_mmp = 'g:\\image_caption\\coco\\processed\\train2014_fc.mmp'
+            self.feat_json = 'g:\\image_caption\\coco\\processed\\imgid2lineno.json'
         else:
-            self.feat_mmp = '/mnt/ht/image_caption/coco/processed/coco0126_fc.mmp'
-            self.feat_json = '/mnt/ht/image_caption/coco/processed/coco0126_img2id.json'
+            self.feat_mmp = '/mnt/ht/image_caption/coco/processed/train2014_fc.mmp'
+            self.feat_json = '/mnt/ht/image_caption/coco/processed/imgid2lineno.json'
 
     def init_metric(self):
         nll = Nll(data_loader=self.oracle_data_loader, rnn=self.oracle, sess=self.sess)
@@ -274,11 +277,11 @@ class Seqgan_cap(Gan):
 
 
     def init_real_trainng(self, data_loc=None):
-        from utils.text_process import text_precess, text_to_code
-        from utils.text_process import get_tokenlized, get_word_list, get_dict
+        from utils.text_process import coco_process, coco_text_to_code
+        from utils.text_process import get_tokenlized, get_word_list, get_dict, split_text
         if data_loc is None:
             data_loc = 'data/image_coco.txt'
-        self.sequence_length, self.vocab_size = text_precess(data_loc)
+        self.sequence_length, self.vocab_size = coco_process(data_loc)
 
         featloader = FeatLoader(self.feat_json, self.feat_mmp)
 
@@ -292,16 +295,23 @@ class Seqgan_cap(Gan):
                                       l2_reg_lambda=self.l2_reg_lambda)
         self.set_discriminator(discriminator)
 
+        for var in tf.trainable_variables():
+            tf.summary.histogram("parameters/" + var.op.name, var)
+
         gen_dataloader = DataLoader(batch_size=self.batch_size, seq_length=self.sequence_length, featloader=featloader)
         oracle_dataloader = None
-        dis_dataloader = DisDataloader(batch_size=self.batch_size, seq_length=self.sequence_length)
+        dis_dataloader = DisDataloader(batch_size=self.batch_size, seq_length=self.sequence_length, featloader=featloader)
 
         self.set_data_loader(gen_loader=gen_dataloader, dis_loader=dis_dataloader, oracle_loader=oracle_dataloader)
+
         tokens = get_tokenlized(data_loc)
+        img_ids, tokens = split_text(tokens)
         word_set = get_word_list(tokens)
         [word_index_dict, index_word_dict] = get_dict(word_set)
+        with open(self.dict_file, 'w') as outfile:
+            json.dump({'iw': index_word_dict, 'wi': word_index_dict}, outfile)
         with open(self.oracle_file, 'w') as outfile:
-            outfile.write(text_to_code(tokens, word_index_dict, self.sequence_length))
+            outfile.write(coco_text_to_code(img_ids, tokens, word_index_dict, self.sequence_length))
         return word_index_dict, index_word_dict
 
     def init_real_metric(self):
@@ -314,7 +324,7 @@ class Seqgan_cap(Gan):
         self.add_metric(inll)
 
     def train_real(self, data_loc=None):
-        from utils.text_process import code_to_text
+        from utils.text_process import code_to_text, coco_code_to_text
         from utils.text_process import get_tokenlized
         wi_dict, iw_dict = self.init_real_trainng(data_loc)
         self.init_real_metric()
@@ -323,7 +333,7 @@ class Seqgan_cap(Gan):
             with open(self.generator_file, 'r') as file:
                 codes = get_tokenlized(self.generator_file)
             with open(self.test_file, 'w') as outfile:
-                outfile.write(code_to_text(codes=codes, dictionary=dict))
+                outfile.write(coco_code_to_text(codes=codes, dictionary=dict))
 
         self.sess.run(tf.global_variables_initializer())
 
@@ -377,5 +387,6 @@ class Seqgan_cap(Gan):
             self.reward.update_params()
             for _ in range(15):
                 self.train_discriminator()
-
-
+            
+            # if epoch % 10 == 0:
+            #     self.saver.save(sess, os.path.join(self.checkpoint, 'ckpt'), global_step=epoch)

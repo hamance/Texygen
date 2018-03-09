@@ -8,7 +8,7 @@ class Reward(object):
         self.lstm = lstm
         self.update_rate = update_rate
         self.featloader = featloader
-        self.feat_size = 512
+        self.feat_size = 4096   #512
 
         self.num_vocabulary = self.lstm.num_vocabulary
         self.batch_size = self.lstm.batch_size

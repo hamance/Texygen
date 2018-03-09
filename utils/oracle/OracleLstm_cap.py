@@ -12,7 +12,7 @@ class OracleLstm(object):
         self.start_token = tf.constant([start_token] * self.batch_size, dtype=tf.int32)
         self.g_params = []
         self.featloader = featloader
-        self.feat_size = 512
+        self.feat_size = 4096   # 512
         self.temperature = 1.0
 
         with tf.variable_scope('generator'):
